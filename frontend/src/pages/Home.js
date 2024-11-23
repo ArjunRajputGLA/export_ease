@@ -22,7 +22,7 @@ function Home() {
 
     const fetchProducts = async () => {
         try {
-            const url = "https://export-ease-api.vercel.app/products";
+            const url = "https://export-ease-api.vercel.app/auth/home";
             const headers = {
                 headers: {
                     'Authorization': localStorage.getItem('token')
