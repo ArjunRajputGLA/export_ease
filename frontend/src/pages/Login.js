@@ -8,7 +8,6 @@ function Login() {
         email: '',
         password: ''
     });
-    const [isLoading, setIsLoading] = useState(false);
     const navigate = useNavigate();
 
     const handleChange = (e) => {
@@ -21,52 +20,64 @@ function Login() {
 
     const handleLogin = async (e) => {
         e.preventDefault();
-        const { email, password } = loginInfo;
         
-        // Form validation
-        if (!email?.trim() || !password?.trim()) {
+        // 1. Log the submission attempt
+        console.log('Login attempt with:', {
+            email: loginInfo.email,
+            passwordLength: loginInfo.password?.length
+        });
+
+        // 2. Basic validation
+        if (!loginInfo.email || !loginInfo.password) {
             handleError('Email and password are required');
             return;
         }
 
-        setIsLoading(true);
-
         try {
-            const url = `https://export-ease-api.vercel.app/auth/login`;
-            const response = await fetch(url, {
-                method: "POST",
+            // 3. Log the API call attempt
+            console.log('Making API call to:', 'https://export-ease-api.vercel.app/auth/login');
+
+            const response = await fetch('https://export-ease-api.vercel.app/auth/login', {
+                method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Accept': 'application/json'
+                    'Accept': 'application/json',
                 },
-                credentials: 'include', // Include cookies if your API uses them
-                body: JSON.stringify(loginInfo)
+                body: JSON.stringify({
+                    email: loginInfo.email.trim(),
+                    password: loginInfo.password
+                })
             });
 
-            const result = await response.json();
+            // 4. Log the raw response
+            console.log('Response status:', response.status);
+            console.log('Response headers:', Object.fromEntries([...response.headers]));
 
-            // Handle different response scenarios
-            if (!response.ok) {
-                throw new Error(result.message || 'Login failed');
-            }
+            // 5. Get the response data
+            const data = await response.json();
+            console.log('Response data:', data);
 
-            if (result.success && result.jwtToken) {
-                handleSuccess(result.message || 'Login successful');
-                localStorage.setItem('token', result.jwtToken);
-                localStorage.setItem('loggedInUser', result.name);
-                
-                setTimeout(() => {
-                    navigate('/home');
-                }, 1000);
+            // 6. Handle the response
+            if (response.ok && data.success) {
+                // Success case
+                handleSuccess('Login successful');
+                localStorage.setItem('token', data.jwtToken);
+                localStorage.setItem('loggedInUser', data.name);
+                navigate('/home');
             } else {
-                throw new Error(result.message || 'Invalid response from server');
+                // Error case
+                throw new Error(data.message || 'Login failed');
             }
 
         } catch (error) {
-            console.error('Login error:', error);
-            handleError(error.message || 'An error occurred during login. Please try again.');
-        } finally {
-            setIsLoading(false);
+            // 7. Detailed error logging
+            console.error('Login error details:', {
+                message: error.message,
+                stack: error.stack,
+                name: error.name
+            });
+            
+            handleError(error.message || 'Login failed. Please try again.');
         }
     }
 
@@ -83,7 +94,7 @@ function Login() {
                         name='email'
                         placeholder='Enter your email...'
                         value={loginInfo.email}
-                        disabled={isLoading}
+                        autoComplete="email"
                     />
                 </div>
                 <div>
@@ -95,12 +106,10 @@ function Login() {
                         name='password'
                         placeholder='Enter your password...'
                         value={loginInfo.password}
-                        disabled={isLoading}
+                        autoComplete="current-password"
                     />
                 </div>
-                <button type='submit' disabled={isLoading}>
-                    {isLoading ? 'Logging in...' : 'Login'}
-                </button>
+                <button type='submit'>Login</button>
                 <span>
                     Don't have an account?{' '}
                     <Link to="/signup">Signup</Link>
